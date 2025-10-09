@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wave Player da 1:11 a 1:25</title>
+  <style>
+    :root{--bg:#0f1720;--accent:#1db954;--text:#e6eef8}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Helvetica,Arial;background:linear-gradient(180deg,#061017 0%,#071221 100%);display:flex;align-items:center;justify-content:center;color:var(--text)}
+    .wave{width:90vw;max-width:900px;height:160px;cursor:pointer;transition:opacity 1s ease, transform 1s ease;}
+    .wave.fading{opacity:0.3;transform:scaleY(0.7);}
+    @keyframes pulse {
+      0%, 100% { transform: scaleY(1); opacity: 1; }
+      50% { transform: scaleY(1.1); opacity: 0.9; }
+    }
+    .wave.pulsing { animation: pulse 1s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <svg class="wave" viewBox="0 0 1200 200" preserveAspectRatio="xMidYMid meet" id="waveSVG" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect width="1200" height="200" fill="transparent"></rect>
+    <g fill="none" stroke="white" stroke-linecap="round" stroke-width="14" opacity="0.95" stroke-linejoin="round">
+      <g transform="translate(600 100)">
+        <path d="M-540 0v20 M-500 0v48 M-460 0v32 M-420 0v68 M-380 0v24 M-340 0v88 M-300 0v56 M-260 0v40 M-220 0v24 M-180 0v12 M-140 0v80 M-100 0v32 M-60 0v12 M-20 0v100 M20 0v12 M60 0v32 M100 0v80 M140 0v12 M180 0v24 M220 0v40 M260 0v56 M300 0v88 M340 0v24 M380 0v68 M420 0v32 M460 0v48 M500 0v20" stroke="white"/>
+      </g>
+    </g>
+  </svg>
+
+  <script>
+    const VIDEO_ID = 'wX7YH1ctR9c';
+    const START_TIME = 71; // 1:11
+    const END_TIME = 85; // 1:25
+
+    function loadYouTubeAPI() {
+      return new Promise((resolve) => {
+        if (window.YT && window.YT.Player) return resolve(window.YT);
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+        window.onYouTubeIframeAPIReady = () => resolve(window.YT);
+      });
+    }
+
+    let player;
+    let interval;
+
+    function createHiddenPlayer() {
+      const iframeContainer = document.createElement('div');
+      iframeContainer.style.position = 'absolute';
+      iframeContainer.style.width = '0';
+      iframeContainer.style.height = '0';
+      iframeContainer.style.overflow = 'hidden';
+      iframeContainer.id = 'player';
+      document.body.appendChild(iframeContainer);
+
+      player = new YT.Player('player', {
+        videoId: VIDEO_ID,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          start: START_TIME,
+          end: END_TIME,
+          rel: 0,
+          modestbranding: 1
+        },
+        events: {
+          onStateChange: onPlayerStateChange
+        }
+      });
+    }
+
+    function playSegment() {
+      const wave = document.getElementById('waveSVG');
+      wave.classList.remove('fading');
+      wave.classList.add('pulsing');
+      player.seekTo(START_TIME);
+      player.playVideo();
+      monitorStop();
+    }
+
+    function onPlayerStateChange(event) {
+      const wave = document.getElementById('waveSVG');
+      if (event.data == YT.PlayerState.PLAYING) {
+        wave.classList.remove('fading');
+        wave.classList.add('pulsing');
+        monitorStop();
+      } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.ENDED) {
+        wave.classList.remove('pulsing');
+        wave.classList.add('fading');
+        clearInterval(interval);
+      }
+    }
+
+    function monitorStop() {
+      clearInterval(interval);
+      interval = setInterval(() => {
+        const current = player.getCurrentTime();
+        if (current >= END_TIME) {
+          player.pauseVideo();
+          clearInterval(interval);
+          const wave = document.getElementById('waveSVG');
+          wave.classList.remove('pulsing');
+          wave.classList.add('fading');
+        }
+      }, 500);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadYouTubeAPI();
+      createHiddenPlayer();
+      document.getElementById('waveSVG').addEventListener('click', playSegment);
+    });
+  </script>
+</body>
+</html>
